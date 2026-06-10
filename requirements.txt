@@ -1,7 +1,0 @@
-snakemake>=7.32.0,<8
-hydra-genetics>=3.0.0
-pandas>=2.0
-pysam>=0.22
-openpyxl>=3.1
-PyYAML>=6.0
-jsonschema>=4.0
