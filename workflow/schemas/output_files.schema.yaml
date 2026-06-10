@@ -1,0 +1,29 @@
+$schema: "http://json-schema.org/draft-04/schema#"
+description: Output file specification
+type: object
+properties:
+  files:
+    description: Defines a list of output files
+    type: array
+    items:
+      type: object
+      properties:
+        name:
+          type: string
+        input:
+          type:
+            - string
+            - "null"
+        output:
+          type: string
+        types:
+          type: array
+          items:
+            type: string
+            pattern: ^(N|T|R)$
+      required:
+        - name
+        - input
+        - output
+required:
+  - files

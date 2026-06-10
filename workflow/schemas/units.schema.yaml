@@ -1,0 +1,24 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+description: row represents one mapped BAM dataset
+properties:
+  sample:
+    type: string
+    description: sample id
+  type:
+    type: string
+    description: type of sample data Tumor, Normal, RNA (N|T|R)
+    pattern: "^(N|T|R)$"
+  platform:
+    type: string
+    description: sequence platform used to generate data
+  bam:
+    type: string
+    description: absolute path to mapped bam file
+  bai:
+    type: string
+    description: absolute path to bam index (optional; defaults to <bam>.bai)
+required:
+  - sample
+  - type
+  - platform
+  - bam

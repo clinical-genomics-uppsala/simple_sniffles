@@ -1,0 +1,40 @@
+$schema: "http://json-schema.org/draft-04/schema#"
+description: snakemake configuration file
+type: object
+properties:
+  samples:
+    type: string
+  units:
+    type: string
+  output:
+    type: string
+    description: output yaml/json file defining expected output from pipeline
+  resources:
+    type: string
+    description: Path to resources.yaml file
+  default_container:
+    type: string
+    description: name or path to a default docker/singularity container
+  reference:
+    type: object
+    properties:
+      fasta:
+        type: string
+        description: path to reference genome FASTA
+    required:
+      - fasta
+  sniffles2_call:
+    type: object
+    properties:
+      container:
+        type: string
+      tandem_repeats:
+        type: string
+        description: path to tandem-repeat BED passed to Sniffles2
+required:
+  - samples
+  - units
+  - output
+  - resources
+  - default_container
+  - reference

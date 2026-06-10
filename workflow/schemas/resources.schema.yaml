@@ -1,0 +1,19 @@
+$schema: "http://json-schema.org/draft-04/schema#"
+description: resource definition
+type: object
+properties:
+  default_resources:
+    type: object
+    properties:
+      mem_mb:
+        type: integer
+      mem_per_cpu:
+        type: integer
+      partition:
+        type: string
+      threads:
+        type: integer
+      time:
+        type: string
+required:
+  - default_resources
