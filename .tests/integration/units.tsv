@@ -1,0 +1,2 @@
+sample	type	platform	bam	bai
+testsample	T	PACBIO	.tests/integration/data/testsample_T.bam	.tests/integration/data/testsample_T.bam.bai

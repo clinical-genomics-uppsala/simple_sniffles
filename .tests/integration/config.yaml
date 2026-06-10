@@ -1,0 +1,20 @@
+---
+output: "config/output_files.yaml"
+resources: "config/resources.yaml"
+samples: ".tests/integration/samples.tsv"
+units: ".tests/integration/units.tsv"
+
+default_container: "docker://hydragenetics/common:3.0.0"
+
+module_versions:
+  cnv_sv: "v2.0.0"
+
+reference:
+  fasta: ".tests/integration/data/reference.fasta"
+
+sniffles2_call:
+  container: "docker://hydragenetics/sniffles2:2.2"
+  tandem_repeats: ".tests/integration/data/tandem_repeats.bed"
+
+compile_xlsx_report:
+  container: "docker://hydragenetics/common:3.0.0"
