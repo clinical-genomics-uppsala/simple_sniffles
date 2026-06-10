@@ -1,0 +1,2 @@
+sample	type	platform	bam	bai
+HG002	T	PACBIO	/data/HG002_T.bam	/data/HG002_T.bam.bai

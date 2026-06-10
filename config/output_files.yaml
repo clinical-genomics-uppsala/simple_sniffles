@@ -1,0 +1,9 @@
+---
+directory: "results"
+files:
+  - name: "sniffles2 vcf"
+    input: "cnv_sv/sniffles2_call/{sample}_{type}.vcf.gz"
+    output: "sv/{sample}_{type}.sniffles2.vcf.gz"
+  - name: "sniffles2 xlsx report"
+    input: "reports/xlsx_reports/{sample}_{type}.sniffles2.xlsx"
+    output: "sv/{sample}_{type}.sniffles2.xlsx"
