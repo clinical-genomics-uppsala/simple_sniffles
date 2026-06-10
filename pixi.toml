@@ -1,4 +1,4 @@
-[project]
+[workspace]
 name = "simple_sniffles"
 version = "0.1.0"
 description = "Sniffles2 SV calling pipeline (hydra-genetics)"
@@ -10,7 +10,7 @@ snakemake = ">=7.32.0,<8"
 hydra-genetics = ">=3.0.0"
 pandas = ">=2.0"
 pysam = ">=0.22"
-openpyxl = ">=3.1"
+xlsxwriter = ">=3.1"
 pyyaml = ">=6.0"
 jsonschema = ">=4.0"
 
@@ -19,3 +19,6 @@ pytest = ">=8.0"
 
 [environments]
 default = { features = ["test"] }
+
+[pypi-dependencies]
+hydra-genetics = "==4.0.0"

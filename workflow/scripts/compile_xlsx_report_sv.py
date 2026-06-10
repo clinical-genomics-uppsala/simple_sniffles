@@ -68,7 +68,7 @@ def write_xlsx(rows: list, out_path: str, sample: str, software_versions: dict =
         [{"key": "sample", "value": sample}]
         + [{"key": f"version:{k}", "value": v} for k, v in software_versions.items()]
     )
-    with pd.ExcelWriter(out_path, engine="openpyxl") as writer:
+    with pd.ExcelWriter(out_path, engine="xlsxwriter") as writer:
         variants.to_excel(writer, sheet_name="SV", index=False)
         meta.to_excel(writer, sheet_name="info", index=False)
 
