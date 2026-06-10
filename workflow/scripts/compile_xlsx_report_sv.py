@@ -5,55 +5,85 @@ standalone via argparse. SV-only: parses one Sniffles2 VCF and writes one
 spreadsheet.
 """
 import argparse
-import gzip
 import json
 import logging
 from typing import Any
 
 import pandas as pd
+import pysam
 
 ALLOWED_SV_TYPES = ["DEL", "INS", "INV", "DUP", "BND"]
 
-
-def _open(path):
-    return gzip.open(path, "rt") if str(path).endswith(".gz") else open(path)
-
-
-def _parse_info(info: str) -> dict:
-    d = {}
-    for field in info.split(";"):
-        if "=" in field:
-            k, v = field.split("=", 1)
-            d[k] = v
-        else:
-            d[field] = True
-    return d
+COLUMNS = [
+    "CHROM", "POS", "ID", "SVTYPE", "END", "SVLEN",
+    "ALT", "QUAL", "FILTER", "GT", "DR", "DV", "VAF", "COVERAGE",
+]
 
 
 def parse_sv_vcf(path: str) -> list:
-    """Parse a Sniffles2 VCF into a list of row dicts, keeping allowed SV types."""
+    """Parse a Sniffles2 VCF with pysam, keeping allowed SV types.
+
+    Extracts FORMAT fields GT, DR, DV, VAF and INFO field COVERAGE.
+    """
     rows = []
-    with _open(path) as fh:
-        for line in fh:
-            if line.startswith("#"):
-                continue
-            cols = line.rstrip("\n").split("\t")
-            chrom, pos, vid, ref, alt, qual, flt, info = cols[:8]
-            i = _parse_info(info)
-            svtype = i.get("SVTYPE", "")
+    with pysam.VariantFile(path, "r") as vcf:
+        samples = list(vcf.header.samples)
+        samp_name = samples[0] if samples else None
+
+        for record in vcf:
+            svtype = record.info["SVTYPE"] if "SVTYPE" in record.info else ""
             if svtype not in ALLOWED_SV_TYPES:
                 continue
+
+            samp = record.samples[samp_name] if samp_name else None
+
+            # Genotype
+            gt = ""
+            if samp is not None:
+                raw_gt = samp.get("GT")
+                if raw_gt is not None:
+                    gt = "/".join("." if a is None else str(a) for a in raw_gt)
+
+            # Read support
+            dr = samp.get("DR") if samp is not None else None
+            dv = samp.get("DV") if samp is not None else None
+
+            # VAF: INFO first (Sniffles2 writes it there), FORMAT fallback
+            vaf = record.info["VAF"] if "VAF" in record.info else None
+            if vaf is None and samp is not None:
+                vaf = samp.get("VAF")
+            if isinstance(vaf, (list, tuple)):
+                vaf = vaf[0] if vaf else None
+
+            # COVERAGE: Sniffles2 emits a tuple; join as comma-separated string
+            raw_cov = record.info["COVERAGE"] if "COVERAGE" in record.info else None
+            if raw_cov is None:
+                coverage = ""
+            elif isinstance(raw_cov, (list, tuple)):
+                coverage = ",".join(str(int(v)) for v in raw_cov if v is not None)
+            else:
+                coverage = str(raw_cov)
+
+            svlen = record.info["SVLEN"] if "SVLEN" in record.info else None
+            if isinstance(svlen, (list, tuple)):
+                svlen = svlen[0] if svlen else None
+
             rows.append(
                 {
-                    "CHROM": chrom,
-                    "POS": int(pos),
-                    "ID": vid,
+                    "CHROM": record.chrom,
+                    "POS": record.pos,
+                    "ID": record.id or "",
                     "SVTYPE": svtype,
-                    "END": int(i["END"]) if "END" in i and i["END"] is not True else None,
-                    "SVLEN": int(i["SVLEN"]) if "SVLEN" in i and i["SVLEN"] is not True else None,
-                    "ALT": alt,
-                    "QUAL": qual,
-                    "FILTER": flt,
+                    "END": record.stop,
+                    "SVLEN": svlen,
+                    "ALT": record.alts[0] if record.alts else "",
+                    "QUAL": record.qual,
+                    "FILTER": ";".join(record.filter.keys()) or ".",
+                    "GT": gt,
+                    "DR": dr,
+                    "DV": dv,
+                    "VAF": vaf,
+                    "COVERAGE": coverage,
                 }
             )
     return rows
@@ -61,9 +91,7 @@ def parse_sv_vcf(path: str) -> list:
 
 def write_xlsx(rows: list, out_path: str, sample: str, software_versions: dict = None) -> None:
     software_versions = software_versions or {}
-    variants = pd.DataFrame(
-        rows, columns=["CHROM", "POS", "ID", "SVTYPE", "END", "SVLEN", "ALT", "QUAL", "FILTER"]
-    )
+    variants = pd.DataFrame(rows, columns=COLUMNS)
     meta = pd.DataFrame(
         [{"key": "sample", "value": sample}]
         + [{"key": f"version:{k}", "value": v} for k, v in software_versions.items()]
