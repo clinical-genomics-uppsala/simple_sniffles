@@ -13,3 +13,6 @@ files:
   - name: "sniffles2 joint vcf tbi"
     input: "cnv_sv/sniffles2_joint/{sample}.vcf.gz.tbi"
     output: "sv/{sample}.sniffles2_joint.vcf.gz.tbi"
+  - name: "sniffles2 plots"
+    input: null
+    output: "cnv_sv/sniffles2_plot/{sample}"

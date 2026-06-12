@@ -89,6 +89,36 @@ use rule tabix from cnv_sv as cnv_sv_tabix_sniffles_joint with:
         file="^cnv_sv/sniffles2_joint/.+",
 
 
+rule sniffles2_plot:
+    input:
+        vcf="cnv_sv/sniffles2_joint/{sample}.vcf.gz",
+        tbi="cnv_sv/sniffles2_joint/{sample}.vcf.gz.tbi",
+    output:
+        outdir=directory("cnv_sv/sniffles2_plot/{sample}"),
+    params:
+        extra=config.get("sniffles2_plot", {}).get("extra", ""),
+    log:
+        "cnv_sv/sniffles2_plot/{sample}.log",
+    benchmark:
+        repeat(
+            "cnv_sv/sniffles2_plot/{sample}.benchmark.tsv",
+            config.get("sniffles2_plot", {}).get("benchmark_repeats", 1),
+        )
+    threads: config.get("sniffles2_plot", {}).get("threads", config["default_resources"]["threads"])
+    resources:
+        mem_mb=config.get("sniffles2_plot", {}).get("mem_mb", config["default_resources"]["mem_mb"]),
+        mem_per_cpu=config.get("sniffles2_plot", {}).get("mem_per_cpu", config["default_resources"]["mem_per_cpu"]),
+        partition=config.get("sniffles2_plot", {}).get("partition", config["default_resources"]["partition"]),
+        threads=config.get("sniffles2_plot", {}).get("threads", config["default_resources"]["threads"]),
+        time=config.get("sniffles2_plot", {}).get("time", config["default_resources"]["time"]),
+    container:
+        config.get("sniffles2_plot", {}).get("container", config["default_container"])
+    message:
+        "{rule}: plotting Sniffles2 joint call for {wildcards.sample}"
+    shell:
+        "(python3 -m sniffles2_plot -i {input.vcf} -o {output.outdir}/ {params.extra}) 2> {log}"
+
+
 rule compile_xlsx_report:
     input:
         vcf_sv="cnv_sv/sniffles2_call/{sample}_{type}.vcf.gz",
