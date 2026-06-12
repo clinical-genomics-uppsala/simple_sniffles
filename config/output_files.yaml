@@ -10,3 +10,6 @@ files:
   - name: "sniffles2 joint vcf"
     input: "cnv_sv/sniffles2_joint/{sample}.vcf.gz"
     output: "sv/{sample}.sniffles2_joint.vcf.gz"
+  - name: "sniffles2 joint vcf tbi"
+    input: "cnv_sv/sniffles2_joint/{sample}.vcf.gz.tbi"
+    output: "sv/{sample}.sniffles2_joint.vcf.gz.tbi"

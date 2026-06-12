@@ -84,6 +84,11 @@ rule sniffles2_joint_call:
         """
 
 
+use rule tabix from cnv_sv as cnv_sv_tabix_sniffles_joint with:
+    wildcard_constraints:
+        file="^cnv_sv/sniffles2_joint/.+",
+
+
 rule compile_xlsx_report:
     input:
         vcf_sv="cnv_sv/sniffles2_call/{sample}_{type}.vcf.gz",
