@@ -35,7 +35,7 @@ validate(config, schema="../schemas/config.schema.yaml")
 def _resolve_placeholders(obj, mapping):
     if isinstance(obj, str):
         for key, val in mapping.items():
-            obj = obj.replace("{" + key + "}", val)
+            obj = obj.replace("{{" + key + "}}", val)
         return obj
     if isinstance(obj, dict):
         return {k: _resolve_placeholders(v, mapping) for k, v in obj.items()}
