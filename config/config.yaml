@@ -4,19 +4,36 @@ resources: "config/resources.yaml"
 samples: "config/samples.tsv"
 units: "config/units.tsv"
 
-default_container: "docker://hydragenetics/common:3.0.0"
+default_container: "docker://hydragenetics/common:4.0.0"
+pipeline_version: "v0.1.0"
+
+REF_DATA: "/beegfs-storage/projects/wp2/nobackup/Twist_Myelom/ref_data"
+PON_DATA: "/beegfs-storage/projects/wp2/nobackup/Twist_Myelom/build_pon/results"
 
 module_versions:
-  cnv_sv: "v2.0.0"
+  cnv_sv: "develop"
 
 reference:
-  fasta: "reference/genome.fasta"
+  fasta: "{{REF_DATA}}/GCA_000001405.15_GRCh38_no_alt_analysis_set.fasta"
+  fai: "{{REF_DATA}}/GCA_000001405.15_GRCh38_no_alt_analysis_set.fasta.fai"
+  trf: &trf "{{REF_DATA}}/human_GRCh38_no_alt_analysis_set.trf.bed"
+
+aligner: "pbmm2"
+snv_aligner: "pbmm2"
+phaser: "whatshap"
 
 sniffles2_call:
-  container: "docker://hydragenetics/sniffles2:2.2"
-  tandem_repeats: "reference/human_GRCh38_no_alt_analysis_set.trf.bed"
+  container: "docker://hydragenetics/sniffles2:2.6.1"
+  tandem_repeats: *trf
+  extra: "--phase"
+
+sniffles2_joint_call:
+  container: "docker://hydragenetics/sniffles2:2.6.1"
+  extra: "--phase"
 
 compile_xlsx_report:
   container: "docker://hydragenetics/common:3.0.0"
   filters: []
   genes: ""
+
+trimmer_software: "None"
