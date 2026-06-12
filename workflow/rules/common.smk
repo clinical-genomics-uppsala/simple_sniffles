@@ -29,6 +29,23 @@ if not workflow.overwrite_configfiles:
 
 validate(config, schema="../schemas/config.schema.yaml")
 
+### Resolve path placeholders (e.g. {REF_DATA}, {PON_DATA}) defined as top-level
+### config keys so they don't reach rule inputs as unresolved wildcards.
+
+def _resolve_placeholders(obj, mapping):
+    if isinstance(obj, str):
+        for key, val in mapping.items():
+            obj = obj.replace("{" + key + "}", val)
+        return obj
+    if isinstance(obj, dict):
+        return {k: _resolve_placeholders(v, mapping) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_resolve_placeholders(v, mapping) for v in obj]
+    return obj
+
+_placeholders = {k: v for k, v in config.items() if isinstance(v, str) and not k.startswith("_")}
+config.update(_resolve_placeholders(config, _placeholders))
+
 ### Resources
 
 config = load_resources(config, config["resources"])
