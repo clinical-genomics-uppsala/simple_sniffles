@@ -1,0 +1,9 @@
+.pytest_cache/
+.claude/
+__pycache__/
+.DS_Store
+
+examples/
+hydra_genetics_*/
+
+sync_to_marvin.sh

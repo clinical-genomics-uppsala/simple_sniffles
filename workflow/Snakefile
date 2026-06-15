@@ -10,7 +10,8 @@ include: "rules/common.smk"
 rule all:
     input:
         compile_output_file_list,
-        expand("cnv_sv/sniffles2_plot/{sample}", sample=get_samples(samples)),
+        # uncomment when the plotting rule is ready
+        # expand("cnv_sv/sniffles2_plot/{sample}", sample=get_samples(samples)),
 
 
 module cnv_sv:

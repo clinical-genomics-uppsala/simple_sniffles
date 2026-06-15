@@ -35,7 +35,7 @@ sniffles2_plot:
   container: "docker://hydragenetics/sniffles2:2.6.1"
 
 compile_xlsx_report:
-  container: "docker://hydragenetics/common:3.0.0"
+  container: "docker://hydragenetics/common:4.0.0"
   filters: []
   genes: ""
 

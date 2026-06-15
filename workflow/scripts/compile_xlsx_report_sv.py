@@ -17,8 +17,23 @@ ALLOWED_SV_TYPES = ["DEL", "INS", "INV", "DUP", "BND"]
 # Column order for single-sample output; joint output extends this dynamically.
 SINGLE_SAMPLE_COLUMNS = [
     "CHROM", "POS", "ID", "SVTYPE", "END", "SVLEN",
-    "ALT", "QUAL", "FILTER", "GT", "DR", "DV", "VAF", "COVERAGE",
+    "ALT", "QUAL", "FILTER", "SUPPORT", "GT", "GQ", "DR", "DV", "VAF", "COVERAGE",
 ]
+
+
+def _compute_vaf(dr, dv, info_vaf=None, multi=False):
+    """Return per-sample VAF.
+
+    For joint (multi-sample) VCFs Sniffles2 does not write INFO/VAF, so we
+    compute DV / (DR + DV). For single-sample VCFs INFO/VAF is authoritative.
+    """
+    if not multi and info_vaf is not None:
+        vaf = info_vaf[0] if isinstance(info_vaf, (list, tuple)) else info_vaf
+        return round(float(vaf), 4) if vaf is not None else None
+    if dr is not None and dv is not None:
+        total = dr + dv
+        return round(dv / total, 4) if total > 0 else 0.0
+    return None
 
 
 def parse_sv_vcf(path: str, sample_names: list = None) -> list:
@@ -28,7 +43,7 @@ def parse_sv_vcf(path: str, sample_names: list = None) -> list:
         path: Path to VCF (plain or bgzipped).
         sample_names: Sample column names to extract FORMAT fields from.
             None (default) uses the first sample in the header → single-sample
-            mode with flat column names (GT, DR, DV, VAF).
+            mode with flat column names (GT, GQ, DR, DV, VAF).
             A list of names activates multi-sample mode; FORMAT columns are
             suffixed with the type letter from the sample name, e.g. GT_T, GT_N.
     """
@@ -59,6 +74,9 @@ def parse_sv_vcf(path: str, sample_names: list = None) -> list:
             else:
                 coverage = str(raw_cov)
 
+            support = record.info["SUPPORT"] if "SUPPORT" in record.info else None
+            info_vaf = record.info["VAF"] if "VAF" in record.info else None
+
             row = {
                 "CHROM": record.chrom,
                 "POS": record.pos,
@@ -69,7 +87,11 @@ def parse_sv_vcf(path: str, sample_names: list = None) -> list:
                 "ALT": record.alts[0] if record.alts else "",
                 "QUAL": record.qual,
                 "FILTER": ";".join(record.filter.keys()) or ".",
+                "SUPPORT": support,
             }
+
+            if multi:
+                row["SUPP_VEC"] = record.info["SUPP_VEC"] if "SUPP_VEC" in record.info else ""
 
             for sname in sample_names:
                 sfx = suffixes[sname]
@@ -81,17 +103,13 @@ def parse_sv_vcf(path: str, sample_names: list = None) -> list:
                     if raw_gt is not None:
                         gt = "/".join("." if a is None else str(a) for a in raw_gt)
 
+                gq = samp.get("GQ") if samp is not None else None
                 dr = samp.get("DR") if samp is not None else None
                 dv = samp.get("DV") if samp is not None else None
-
-                # VAF: INFO first (Sniffles2 writes it there), FORMAT fallback
-                vaf = record.info["VAF"] if "VAF" in record.info else None
-                if vaf is None and samp is not None:
-                    vaf = samp.get("VAF")
-                if isinstance(vaf, (list, tuple)):
-                    vaf = vaf[0] if vaf else None
+                vaf = _compute_vaf(dr, dv, info_vaf=info_vaf, multi=multi)
 
                 row[f"GT{sfx}"] = gt
+                row[f"GQ{sfx}"] = gq
                 row[f"DR{sfx}"] = dr
                 row[f"DV{sfx}"] = dv
                 row[f"VAF{sfx}"] = vaf

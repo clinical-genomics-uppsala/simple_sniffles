@@ -12,4 +12,4 @@ structural variants.
 
     pixi run snakemake --configfile config/config.yaml --use-singularity -j1
 
-Inputs are mapped BAMs referenced by the `bam` column in `config/units.tsv`.
+Inputs are mapped BAMs referenced by the `bam` column in `config/units.tsv` - the file was created manually not with help of `hydra-genetics create-input-files` because they are mapped files.
