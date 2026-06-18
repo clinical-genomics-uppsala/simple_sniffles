@@ -25,14 +25,11 @@ phaser: "whatshap"
 sniffles2_call:
   container: "docker://hydragenetics/sniffles2:2.6.1"
   tandem_repeats: *trf
-  extra: "--phase"
+  extra: ""
 
 sniffles2_joint_call:
   container: "docker://hydragenetics/sniffles2:2.6.1"
-  extra: "--phase"
-
-sniffles2_plot:
-  container: "docker://hydragenetics/sniffles2:2.6.1"
+  extra: ""
 
 compile_xlsx_report:
   container: "docker://hydragenetics/common:4.0.0"
