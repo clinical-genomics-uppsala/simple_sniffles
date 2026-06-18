@@ -16,8 +16,8 @@ ALLOWED_SV_TYPES = ["DEL", "INS", "INV", "DUP", "BND"]
 
 # Column order for single-sample output; joint output extends this dynamically.
 SINGLE_SAMPLE_COLUMNS = [
-    "CHROM", "POS", "ID", "SVTYPE", "END", "SVLEN",
-    "ALT", "QUAL", "FILTER", "SUPPORT", "GT", "GQ", "DR", "DV", "VAF", "COVERAGE",
+    "CHROM", "POS", "SVTYPE", "END", "SVLEN",
+    "ALT", "QUAL", "FILTER", "SUPPORT", "GT", "GQ", "DR", "DV", "VAF", "COVERAGE_T",
 ]
 
 
@@ -80,7 +80,6 @@ def parse_sv_vcf(path: str, sample_names: list = None) -> list:
             row = {
                 "CHROM": record.chrom,
                 "POS": record.pos,
-                "ID": record.id or "",
                 "SVTYPE": svtype,
                 "END": record.stop,
                 "SVLEN": svlen,
@@ -114,7 +113,7 @@ def parse_sv_vcf(path: str, sample_names: list = None) -> list:
                 row[f"DV{sfx}"] = dv
                 row[f"VAF{sfx}"] = vaf
 
-            row["COVERAGE"] = coverage
+            row["COVERAGE_T"] = coverage
             rows.append(row)
     return rows
 
