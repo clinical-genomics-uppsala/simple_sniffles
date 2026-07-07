@@ -133,7 +133,7 @@ def write_xlsx(
     if sample_order and len(sample_order) > 1:
         meta_rows.append({
             "key": "SUPP_VEC sample order",
-            "value": ",".join(f"{i + 1}={s}" for i, s in enumerate(sample_order)),
+            "value": ",".join(f"{i + 1}={s.rsplit('_', 1)[-1]}" for i, s in enumerate(sample_order)),
         })
     meta_rows += [{"key": f"version:{k}", "value": v} for k, v in software_versions.items()]
     meta = pd.DataFrame(meta_rows)

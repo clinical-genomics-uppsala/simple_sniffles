@@ -170,7 +170,44 @@ def test_joint_write_xlsx_info_sheet_has_supp_vec_order(tmp_path):
     wb = openpyxl.load_workbook(str(out), read_only=True)
     info_rows = list(wb["info"].rows)
     kv = {row[0].value: row[1].value for row in info_rows[1:]}  # skip header row
-    assert kv["SUPP_VEC sample order"] == "1=HG002_T,2=HG002_N"
+    # Only the N/T type suffix is shown, not the full sample name.
+    assert kv["SUPP_VEC sample order"] == "1=T,2=N"
+
+
+def test_joint_write_xlsx_info_sheet_supp_vec_order_follows_header_order(tmp_path):
+    mod = load_module()
+    # Header lists normal before tumor here — the "1=N,2=T" value must reflect
+    # this actual header order, not the sample_names arg order passed in.
+    vcf_n_first = VCF_JOINT.replace("HG002_T\tHG002_N", "HG002_N\tHG002_T").replace(
+        "0/1:10:8\t0/0:20:1", "0/0:20:1\t0/1:10:8"
+    ).replace("1/1:1:17\t0/0:18:0", "0/0:18:0\t1/1:1:17").replace(
+        "0/1:8:4\t0/0:15:0", "0/0:15:0\t0/1:8:4"
+    )
+    rows, sample_order = mod.parse_sv_vcf(
+        make_vcf(tmp_path, vcf_n_first, "joint_n_first.vcf"),
+        sample_names=["HG002_T", "HG002_N"],
+    )
+    out = tmp_path / "joint_n_first.xlsx"
+    mod.write_xlsx(rows, str(out), sample="HG002", software_versions={"sniffles2": "2.2"}, sample_order=sample_order)
+    wb = openpyxl.load_workbook(str(out), read_only=True)
+    info_rows = list(wb["info"].rows)
+    kv = {row[0].value: row[1].value for row in info_rows[1:]}
+    assert kv["SUPP_VEC sample order"] == "1=N,2=T"
+
+
+def test_supp_vec_order_strips_sample_name_with_underscore_prefix(tmp_path):
+    mod = load_module()
+    vcf = VCF_JOINT.replace("HG002_T", "PAT_1234_T").replace("HG002_N", "PAT_1234_N")
+    rows, sample_order = mod.parse_sv_vcf(
+        make_vcf(tmp_path, vcf, "joint_underscored.vcf"),
+        sample_names=["PAT_1234_T", "PAT_1234_N"],
+    )
+    out = tmp_path / "joint_underscored.xlsx"
+    mod.write_xlsx(rows, str(out), sample="PAT_1234", software_versions={"sniffles2": "2.2"}, sample_order=sample_order)
+    wb = openpyxl.load_workbook(str(out), read_only=True)
+    info_rows = list(wb["info"].rows)
+    kv = {row[0].value: row[1].value for row in info_rows[1:]}
+    assert kv["SUPP_VEC sample order"] == "1=T,2=N"
 
 
 def test_single_sample_write_xlsx_info_sheet_has_no_supp_vec_order(tmp_path):
