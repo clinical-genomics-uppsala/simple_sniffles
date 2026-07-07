@@ -36,7 +36,7 @@ def _compute_vaf(dr, dv, info_vaf=None, multi=False):
     return None
 
 
-def parse_sv_vcf(path: str, sample_names: list = None) -> list:
+def parse_sv_vcf(path: str, sample_names: list = None) -> tuple:
     """Parse a Sniffles2 VCF with pysam, keeping allowed SV types.
 
     Args:
@@ -46,6 +46,11 @@ def parse_sv_vcf(path: str, sample_names: list = None) -> list:
             mode with flat column names (GT, GQ, DR, DV, VAF).
             A list of names activates multi-sample mode; FORMAT columns are
             suffixed with the type letter from the sample name, e.g. GT_T, GT_N.
+
+    Returns:
+        A tuple of (rows, sample_order), where sample_order is the list of
+        sample names in the order they appear in the VCF's #CHROM header line.
+        This order determines how INFO/SUPP_VEC's per-sample bits map to samples.
     """
     rows = []
     with pysam.VariantFile(path, "r") as vcf:
@@ -115,17 +120,23 @@ def parse_sv_vcf(path: str, sample_names: list = None) -> list:
 
             row["COVERAGE_T"] = coverage
             rows.append(row)
-    return rows
+    return rows, all_samples
 
 
-def write_xlsx(rows: list, out_path: str, sample: str, software_versions: dict = None) -> None:
+def write_xlsx(
+    rows: list, out_path: str, sample: str, software_versions: dict = None, sample_order: list = None
+) -> None:
     software_versions = software_versions or {}
     columns = list(rows[0].keys()) if rows else SINGLE_SAMPLE_COLUMNS
     variants = pd.DataFrame(rows, columns=columns)
-    meta = pd.DataFrame(
-        [{"key": "sample", "value": sample}]
-        + [{"key": f"version:{k}", "value": v} for k, v in software_versions.items()]
-    )
+    meta_rows = [{"key": "sample", "value": sample}]
+    if sample_order and "SUPP_VEC" in columns:
+        meta_rows.append({
+            "key": "SUPP_VEC sample order",
+            "value": ",".join(f"{i + 1}={s.rsplit('_', 1)[-1]}" for i, s in enumerate(sample_order)),
+        })
+    meta_rows += [{"key": f"version:{k}", "value": v} for k, v in software_versions.items()]
+    meta = pd.DataFrame(meta_rows)
     with pd.ExcelWriter(out_path, engine="xlsxwriter") as writer:
         variants.to_excel(writer, sheet_name="SV", index=False)
         meta.to_excel(writer, sheet_name="info", index=False)
@@ -140,8 +151,8 @@ def create_report(snakemake_obj: Any) -> None:
     sample_names = getattr(snakemake_obj.params, "sample_names", None)
     software_versions = getattr(snakemake_obj.params, "software_versions", {})
     logging.info(f"Parsing {vcf_sv} for sample {sample} (sample_names={sample_names})")
-    rows = parse_sv_vcf(vcf_sv, sample_names=sample_names)
-    write_xlsx(rows, out_xlsx, sample=sample, software_versions=software_versions)
+    rows, sample_order = parse_sv_vcf(vcf_sv, sample_names=sample_names)
+    write_xlsx(rows, out_xlsx, sample=sample, software_versions=software_versions, sample_order=sample_order)
     logging.info(f"Wrote {len(rows)} SV rows to {out_xlsx}")
 
 
@@ -157,9 +168,11 @@ if __name__ == "__main__":
                             help="Sample column names to extract (multi-sample / joint mode).")
         parser.add_argument("--software-versions", default="{}")
         args = parser.parse_args()
+        rows, sample_order = parse_sv_vcf(args.vcf_sv, sample_names=args.sample_names)
         write_xlsx(
-            parse_sv_vcf(args.vcf_sv, sample_names=args.sample_names),
+            rows,
             args.output_xlsx,
             sample=args.sample,
             software_versions=json.loads(args.software_versions),
+            sample_order=sample_order,
         )
