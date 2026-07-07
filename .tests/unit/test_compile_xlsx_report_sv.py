@@ -3,7 +3,7 @@ from pathlib import Path
 
 import openpyxl
 
-SCRIPT = Path(__file__).parent.parent / "workflow" / "scripts" / "compile_xlsx_report_sv.py"
+SCRIPT = Path(__file__).parent.parent.parent / "workflow" / "scripts" / "compile_xlsx_report_sv.py"
 
 # Single-sample VCF (HG002 — one sample column)
 VCF_SINGLE = """\

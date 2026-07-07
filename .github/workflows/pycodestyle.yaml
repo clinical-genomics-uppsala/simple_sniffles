@@ -1,0 +1,33 @@
+name: pycodestyle
+
+# Controls when the action will run.
+on:
+   # Triggers the workflow on push or pull request events but only for the master and develop branch
+  push:
+    branches:
+     - develop
+     - main
+  pull_request:
+    branches:
+     - develop
+     - main
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  pycodestyle:
+    name: pycodestyle
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: prefix-dev/setup-pixi@v0.8.1
+        with:
+          pixi-version: v0.63.0
+          cache: true
+      - name: Check python syntax lib
+        run: pixi run pycodestyle --max-line-length=130 --statistics workflow/scripts
