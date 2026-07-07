@@ -195,6 +195,21 @@ def test_joint_write_xlsx_info_sheet_supp_vec_order_follows_header_order(tmp_pat
     assert kv["SUPP_VEC sample order"] == "1=N,2=T"
 
 
+def test_write_xlsx_omits_supp_vec_order_when_rows_lack_supp_vec_column(tmp_path):
+    # A 2-sample header (sample_order has 2 entries) but rows parsed in
+    # single-sample mode (no SUPP_VEC column) must not get the info row —
+    # gating must follow actual row columns, not just header sample count.
+    mod = load_module()
+    rows, _ = mod.parse_sv_vcf(make_vcf(tmp_path, VCF_JOINT, "joint.vcf"))
+    sample_order = ["HG002_T", "HG002_N"]
+    out = tmp_path / "mismatched.xlsx"
+    mod.write_xlsx(rows, str(out), sample="HG002", software_versions={"sniffles2": "2.2"}, sample_order=sample_order)
+    wb = openpyxl.load_workbook(str(out), read_only=True)
+    info_rows = list(wb["info"].rows)
+    keys = [row[0].value for row in info_rows[1:]]
+    assert "SUPP_VEC sample order" not in keys
+
+
 def test_supp_vec_order_strips_sample_name_with_underscore_prefix(tmp_path):
     mod = load_module()
     vcf = VCF_JOINT.replace("HG002_T", "PAT_1234_T").replace("HG002_N", "PAT_1234_N")

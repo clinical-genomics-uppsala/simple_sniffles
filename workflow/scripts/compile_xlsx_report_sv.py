@@ -130,7 +130,7 @@ def write_xlsx(
     columns = list(rows[0].keys()) if rows else SINGLE_SAMPLE_COLUMNS
     variants = pd.DataFrame(rows, columns=columns)
     meta_rows = [{"key": "sample", "value": sample}]
-    if sample_order and len(sample_order) > 1:
+    if sample_order and "SUPP_VEC" in columns:
         meta_rows.append({
             "key": "SUPP_VEC sample order",
             "value": ",".join(f"{i + 1}={s.rsplit('_', 1)[-1]}" for i, s in enumerate(sample_order)),
