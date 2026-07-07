@@ -57,13 +57,13 @@ def load_module():
 
 def test_parse_sv_vcf_keeps_allowed_types(tmp_path):
     mod = load_module()
-    rows = mod.parse_sv_vcf(make_vcf(tmp_path, VCF_SINGLE))
+    rows, _ = mod.parse_sv_vcf(make_vcf(tmp_path, VCF_SINGLE))
     assert sorted(r["SVTYPE"] for r in rows) == ["DEL", "INS"]  # XYZ filtered out
 
 
 def test_parse_sv_vcf_fields(tmp_path):
     mod = load_module()
-    rows = mod.parse_sv_vcf(make_vcf(tmp_path, VCF_SINGLE))
+    rows, _ = mod.parse_sv_vcf(make_vcf(tmp_path, VCF_SINGLE))
     del_row = next(r for r in rows if r["SVTYPE"] == "DEL")
     assert del_row["CHROM"] == "chr1"
     assert del_row["POS"] == 999
@@ -72,25 +72,25 @@ def test_parse_sv_vcf_fields(tmp_path):
     assert del_row["DR"] == 15
     assert del_row["DV"] == 15
     assert abs(del_row["VAF"] - 0.5) < 1e-6
-    assert del_row["COVERAGE"] == "30,28"
+    assert del_row["COVERAGE_T"] == "30,28"
 
 
 def test_write_xlsx_creates_file(tmp_path):
     mod = load_module()
-    rows = mod.parse_sv_vcf(make_vcf(tmp_path, VCF_SINGLE))
+    rows, sample_order = mod.parse_sv_vcf(make_vcf(tmp_path, VCF_SINGLE))
     out = tmp_path / "out.xlsx"
-    mod.write_xlsx(rows, str(out), sample="HG002", software_versions={"sniffles2": "2.2"})
+    mod.write_xlsx(rows, str(out), sample="HG002", software_versions={"sniffles2": "2.2"}, sample_order=sample_order)
     assert out.exists() and out.stat().st_size > 0
 
 
 def test_write_xlsx_columns(tmp_path):
     mod = load_module()
-    rows = mod.parse_sv_vcf(make_vcf(tmp_path, VCF_SINGLE))
+    rows, sample_order = mod.parse_sv_vcf(make_vcf(tmp_path, VCF_SINGLE))
     out = tmp_path / "out.xlsx"
-    mod.write_xlsx(rows, str(out), sample="HG002", software_versions={"sniffles2": "2.2"})
+    mod.write_xlsx(rows, str(out), sample="HG002", software_versions={"sniffles2": "2.2"}, sample_order=sample_order)
     wb = openpyxl.load_workbook(str(out), read_only=True)
     headers = [cell.value for cell in next(wb["SV"].rows)]
-    for col in ("CHROM", "POS", "SVTYPE", "GT", "DR", "DV", "VAF", "COVERAGE"):
+    for col in ("CHROM", "POS", "SVTYPE", "GT", "DR", "DV", "VAF", "COVERAGE_T"):
         assert col in headers, f"{col} missing from SV sheet"
     # joint-mode suffixed columns must NOT appear in single-sample output
     assert "GT_T" not in headers
@@ -101,16 +101,26 @@ def test_write_xlsx_columns(tmp_path):
 
 def test_joint_parse_keeps_allowed_types(tmp_path):
     mod = load_module()
-    rows = mod.parse_sv_vcf(
+    rows, _ = mod.parse_sv_vcf(
         make_vcf(tmp_path, VCF_JOINT, "joint.vcf"),
         sample_names=["HG002_T", "HG002_N"],
     )
     assert sorted(r["SVTYPE"] for r in rows) == ["DEL", "INS"]
 
 
+def test_joint_parse_sample_order_matches_header(tmp_path):
+    mod = load_module()
+    _, sample_order = mod.parse_sv_vcf(
+        make_vcf(tmp_path, VCF_JOINT, "joint.vcf"),
+        sample_names=["HG002_T", "HG002_N"],
+    )
+    # VCF_JOINT header lists #CHROM ... HG002_T HG002_N — SUPP_VEC bit order follows this.
+    assert sample_order == ["HG002_T", "HG002_N"]
+
+
 def test_joint_parse_per_sample_columns(tmp_path):
     mod = load_module()
-    rows = mod.parse_sv_vcf(
+    rows, _ = mod.parse_sv_vcf(
         make_vcf(tmp_path, VCF_JOINT, "joint.vcf"),
         sample_names=["HG002_T", "HG002_N"],
     )
@@ -124,8 +134,9 @@ def test_joint_parse_per_sample_columns(tmp_path):
     assert del_row["DR_N"] == 20
     assert del_row["DV_N"] == 1
     # Shared INFO fields
-    assert del_row["COVERAGE"] == "30,28"
-    assert abs(del_row["VAF_T"] - 0.5) < 1e-6
+    assert del_row["COVERAGE_T"] == "30,28"
+    # Joint mode computes VAF as DV/(DR+DV) per sample, not from INFO/VAF (rounded to 4 dp).
+    assert abs(del_row["VAF_T"] - round(8 / 18, 4)) < 1e-6
     # Flat (unsuffixed) FORMAT columns must not appear
     assert "GT" not in del_row
     assert "DR" not in del_row
@@ -133,16 +144,41 @@ def test_joint_parse_per_sample_columns(tmp_path):
 
 def test_joint_write_xlsx_columns(tmp_path):
     mod = load_module()
-    rows = mod.parse_sv_vcf(
+    rows, sample_order = mod.parse_sv_vcf(
         make_vcf(tmp_path, VCF_JOINT, "joint.vcf"),
         sample_names=["HG002_T", "HG002_N"],
     )
     out = tmp_path / "joint.xlsx"
-    mod.write_xlsx(rows, str(out), sample="HG002", software_versions={"sniffles2": "2.2"})
+    mod.write_xlsx(rows, str(out), sample="HG002", software_versions={"sniffles2": "2.2"}, sample_order=sample_order)
     wb = openpyxl.load_workbook(str(out), read_only=True)
     headers = [cell.value for cell in next(wb["SV"].rows)]
     for col in ("CHROM", "POS", "SVTYPE",
                 "GT_T", "DR_T", "DV_T", "VAF_T",
                 "GT_N", "DR_N", "DV_N", "VAF_N",
-                "COVERAGE"):
+                "COVERAGE_T"):
         assert col in headers, f"{col} missing from joint SV sheet"
+
+
+def test_joint_write_xlsx_info_sheet_has_supp_vec_order(tmp_path):
+    mod = load_module()
+    rows, sample_order = mod.parse_sv_vcf(
+        make_vcf(tmp_path, VCF_JOINT, "joint.vcf"),
+        sample_names=["HG002_T", "HG002_N"],
+    )
+    out = tmp_path / "joint.xlsx"
+    mod.write_xlsx(rows, str(out), sample="HG002", software_versions={"sniffles2": "2.2"}, sample_order=sample_order)
+    wb = openpyxl.load_workbook(str(out), read_only=True)
+    info_rows = list(wb["info"].rows)
+    kv = {row[0].value: row[1].value for row in info_rows[1:]}  # skip header row
+    assert kv["SUPP_VEC sample order"] == "1=HG002_T,2=HG002_N"
+
+
+def test_single_sample_write_xlsx_info_sheet_has_no_supp_vec_order(tmp_path):
+    mod = load_module()
+    rows, sample_order = mod.parse_sv_vcf(make_vcf(tmp_path, VCF_SINGLE))
+    out = tmp_path / "out.xlsx"
+    mod.write_xlsx(rows, str(out), sample="HG002", software_versions={"sniffles2": "2.2"}, sample_order=sample_order)
+    wb = openpyxl.load_workbook(str(out), read_only=True)
+    info_rows = list(wb["info"].rows)
+    keys = [row[0].value for row in info_rows[1:]]
+    assert "SUPP_VEC sample order" not in keys
