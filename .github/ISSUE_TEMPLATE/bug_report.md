@@ -17,7 +17,7 @@ Please delete this text and anything that's not relevant from the template below
 
 I have checked the following places for your error:
 
-- [ ] [snakemake website: troubleshooting](hhttps://snakemake.readthedocs.io/)
+- [ ] [snakemake website: troubleshooting](https://snakemake.readthedocs.io/)
 
 
 ## Description of the bug

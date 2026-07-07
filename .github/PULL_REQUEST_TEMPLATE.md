@@ -16,4 +16,4 @@ Security: in case of vulnerabilities.
 - [ ] If you've fixed a bug or added code that should be tested, add tests!
 - [ ] Code review
 - [ ] `CHANGELOG.md` is updated
-- [ ] New code is executed and covered by tests, and test approve
+- [ ] New code is executed and covered by tests

@@ -1,6 +1,6 @@
 ---
 name: Feature request
-about: Suggest an idea for the twist_myelom pipeline
+about: Suggest an idea for the simple_sniffles pipeline
 labels: enhancement
 ---
 
