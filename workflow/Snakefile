@@ -60,9 +60,7 @@ rule compile_xlsx_report_joint:
     output:
         xlsx=temp("reports/xlsx_reports/{sample}.sniffles2_joint.xlsx"),
     params:
-        sample_names=lambda wildcards: [
-            f"{wildcards.sample}_{t}" for t in get_unit_types(units, wildcards.sample)
-        ],
+        sample_names=lambda wildcards: [f"{wildcards.sample}_{t}" for t in get_unit_types(units, wildcards.sample)],
         software_versions={
             "sniffles2": config.get("sniffles2_call", {}).get("container", ""),
         },
